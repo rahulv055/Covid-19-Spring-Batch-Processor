@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 
 import com.codingWorld.covid19batchprocessing.model.IndianCaseTimeSeries;
+import com.codingWorld.covid19batchprocessing.model.StateWiseCovidStats;
 
 @Configuration
 @EnableBatchProcessing
@@ -34,20 +35,20 @@ public class BatchConfiguration {
 	
 	
 	@Bean
-	public FlatFileItemReader<IndianCaseTimeSeriesInput> reader() {
-		FlatFileItemReader<IndianCaseTimeSeriesInput> fileItemReader = new FlatFileItemReader<IndianCaseTimeSeriesInput>();
-		fileItemReader.setResource(new ClassPathResource("case-time-series.csv"));
+	public FlatFileItemReader<StateWiseCovidStats> reader() {
+		FlatFileItemReader<StateWiseCovidStats> fileItemReader = new FlatFileItemReader<StateWiseCovidStats>();
+		fileItemReader.setResource(new ClassPathResource("state-wise.csv"));
 		fileItemReader.setLinesToSkip(1);
-	    fileItemReader.setLineMapper(new DefaultLineMapper<IndianCaseTimeSeriesInput>() {
+	    fileItemReader.setLineMapper(new DefaultLineMapper<StateWiseCovidStats>() {
 			{
 				setLineTokenizer(new DelimitedLineTokenizer() {
 					{
-						setNames(IndianCaseTimeSeriesInput.fields());
+						setNames(StateWiseCovidStats.fields());
 					}
 				});
-				setFieldSetMapper(new BeanWrapperFieldSetMapper<IndianCaseTimeSeriesInput>() {
+				setFieldSetMapper(new BeanWrapperFieldSetMapper<StateWiseCovidStats>() {
 					{
-						setTargetType(IndianCaseTimeSeriesInput.class);
+						setTargetType(StateWiseCovidStats.class);
 					}
 				});
 			}
@@ -70,10 +71,10 @@ public class BatchConfiguration {
 	}
 	
 	@Bean
-	public JdbcBatchItemWriter<IndianCaseTimeSeries> writer(DataSource dataSource) {
-	  return new JdbcBatchItemWriterBuilder<IndianCaseTimeSeries>()
+	public JdbcBatchItemWriter<StateWiseCovidStats> writer(DataSource dataSource) {
+	  return new JdbcBatchItemWriterBuilder<StateWiseCovidStats>()
 	    .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-	    .sql("INSERT INTO indian_case_time_series (date1, date,daily_confirmed,total_confirmed,daily_recovered,total_recovered,daily_deceased,total_deceased) VALUES (:date1, :date,:dailyConfirmed,:totalConfirmed,:dailyRecovered,:totalRecovered,:dailyDeceased,:totalDeceased)")
+	    .sql("INSERT INTO state_wise_covid_stats (state, confirmed,recovered,deaths,active,state_code) VALUES (:state, :confirmed,:recovered,:deaths,:active,:stateCode)")
 	    .dataSource(dataSource)
 	    .build();
 	}
@@ -89,9 +90,9 @@ public class BatchConfiguration {
 	}
 
 	@Bean
-	public Step step1(JdbcBatchItemWriter<IndianCaseTimeSeries> writer) {
+	public Step step1(JdbcBatchItemWriter<StateWiseCovidStats> writer) {
 	  return stepBuilderFactory.get("step1")
-	    .<IndianCaseTimeSeriesInput, IndianCaseTimeSeries> chunk(10)
+	    .<StateWiseCovidStats, StateWiseCovidStats> chunk(10)
 	    .reader(reader())
 	    .processor(processor())
 	    .writer(writer)
